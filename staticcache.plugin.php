@@ -35,19 +35,15 @@ class StaticCache extends Plugin
 		
 		//don't cache pages matching ignore list keywords
 		if ( preg_match( "@.*($ignore_list).*@i", $request ) || !Options::get( 'staticcache__ignore_list' ) ) {
-			Utils::debug( 'ignoring' );
 			return;
 		}
 		
 		$request_id = self::get_request_id();
 		$query_id = self::get_query_id();
 		
-		Utils::debug( $request, $request_id, $query_id, "($ignore_list)" );
-		
 		if ( Cache::has( "staticcache:$request_id" ) ) {
 			$cache = Cache::get( "staticcache:$request_id" );
 			if ( isset( $cache[$query_id] ) ) {
-				Utils::debug( 'cached' );
 				global $profile_start;
 				echo $cache[$query_id];
 				$time = microtime(true) - $profile_start;
