@@ -34,32 +34,53 @@ class StaticCache extends Plugin
 		$request = Site::get_url( 'host' ) . $_SERVER['REQUEST_URI'];
 		
 		//don't cache pages matching ignore list keywords
-		if ( preg_match( "@.*($ignore_list).*@i", $request ) || !Options::get( 'staticcache__ignore_list' ) ) {
+		if ( preg_match( "@.*($ignore_list).*@i", $request ) ) {
 			return;
 		}
 		
 		$request_id = self::get_request_id();
 		$query_id = self::get_query_id();
 		
-		if ( Cache::has( "staticcache:$request_id" ) ) {
-			$cache = Cache::get( "staticcache:$request_id" );
+		if ( Cache::has( array("staticcache", $request_id) ) ) {
+			$cache = Cache::get( array("staticcache", $request_id) );
 			if ( isset( $cache[$query_id] ) ) {
 				global $profile_start;
 				echo $cache[$query_id];
 				$time = microtime(true) - $profile_start;
 				echo "<!-- Served by StaticCache in $time seconds -->";
+				Options::set(
+					'staticcache__average_time',
+					( Options::get('staticcache__average_time') + $time ) / 2
+				);
 				exit;
 			}
 		}
 		ob_start( 'StaticCache_ob_end_flush' );
 	}
 	
-	public function cache_invalidate( $url )
+	public function filter_dash_modules( $modules )
+	{
+		$this->add_template( 'static_cache_stats', dirname( __FILE__ ) . '/dash_module_staticcache.php' );
+		$modules[] = 'Static Cache';
+		return $modules;
+	}
+	
+	public function filter_dash_module_static_cache( $module, $id, $theme )
+	{
+		$theme->static_cache_average = sprintf( '%0.4f', Options::get('staticcache__average_time') );
+		$theme->static_cache_pages = count( Cache::get_group('staticcache') );
+		$module['content'] = $theme->fetch( 'static_cache_stats' );
+		return $module;
+	}
+	
+	public function cache_invalidate( $urls )
 	{
 		foreach ( Users::get_all() as $user ) {
-			$request_id = self::get_request_id( $user->id, $url );
-			if ( Cache::has( "staticcache:$request_id" ) ) {
-				Cache::expire( "staticcache:$request_id" );
+			foreach( $urls as $url ) {
+				$request_id = self::get_request_id( $user->id, $url );
+				if ( Cache::has( array("staticcache", $request_id) ) ) {
+					Cache::expire( array("staticcache", $request_id) );
+				}
 			}
 		}
 	}
@@ -74,7 +95,8 @@ class StaticCache extends Plugin
 		$urls = array(
 			$post->comment_feed_link,
 			$post->permalink,
-			URL::get( 'atom_feed', 'index=1' )
+			URL::get( 'atom_feed', 'index=1' ),
+			Site::get_url( 'habari' )
 			);
 		$this->cache_invalidate( $urls );
 	}
@@ -89,7 +111,8 @@ class StaticCache extends Plugin
 		$urls = array(
 			$comment->post->comment_feed_link,
 			$comment->post->permalink,
-			URL::get( 'atom_feed', 'index=1' )
+			URL::get( 'atom_feed', 'index=1' ),
+			Site::get_url( 'habari' )
 			);
 		$this->cache_invalidate( $urls );
 	}
@@ -155,17 +178,16 @@ function StaticCache_ob_end_flush( $buffer )
 	$request_id = StaticCache::get_request_id();
 	$query_id = StaticCache::get_query_id();
 	
-	if ( Cache::has( "staticcache:$request_id" ) ) {
-		$cache = Cache::get( "staticcache:$request_id" );
+	if ( Cache::has( array("staticcache", $request_id) ) ) {
+		$cache = Cache::get( array("staticcache", $request_id) );
 		$cache[$query_id] = $buffer;
 	}
 	else {
-		$cache = array( $request_id => array( $query_id => $buffer ) );
+		$cache = array( $query_id => $buffer );
 	}
-	Cache::set( "staticcache:$request_id", $cache );
+	Cache::set( array("staticcache", $request_id), $cache );
 	
 	return false;
 }
-
 
 ?>
