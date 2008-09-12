@@ -45,16 +45,22 @@ class StaticCache extends Plugin
 			$cache = Cache::get( array("staticcache", $request_id) );
 			if ( isset( $cache[$query_id] ) ) {
 				global $profile_start;
-				echo $cache[$query_id];
+				
+				foreach( $cache[$query_id]['headers'] as $header ) {
+					header($header);
+				}
+				echo $cache[$query_id]['body'];
 				$time = microtime(true) - $profile_start;
 				echo "<!-- Served by StaticCache in $time seconds -->";
 				Options::set(
 					'staticcache__average_time',
 					( Options::get('staticcache__average_time') + $time ) / 2
 				);
+				Options::set('staticcache__hits', Options::get('staticcache__hits') + 1);
 				exit;
 			}
 		}
+		Options::set('staticcache__misses', Options::get('staticcache__misses') + 1);
 		ob_start( 'StaticCache_ob_end_flush' );
 	}
 	
@@ -67,8 +73,15 @@ class StaticCache extends Plugin
 	
 	public function filter_dash_module_static_cache( $module, $id, $theme )
 	{
-		$theme->static_cache_average = sprintf( '%0.4f', Options::get('staticcache__average_time') );
+		$theme->static_cache_average = sprintf( '%.4f', Options::get('staticcache__average_time') );
 		$theme->static_cache_pages = count( Cache::get_group('staticcache') );
+		
+		$hits = Options::get('staticcache__hits');
+		$misses = Options::get('staticcache__misses');
+		$total = $hits + $misses;
+		$theme->static_cache_hits = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
+		$theme->static_cache_misses = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
+		
 		$module['content'] = $theme->fetch( 'static_cache_stats' );
 		return $module;
 	}
@@ -132,6 +145,10 @@ class StaticCache extends Plugin
 		return $actions;
 	}
 	
+	/**
+	 * @todo add expire time option
+	 * @todo add invalidate cache button
+	 */
 	public function action_plugin_ui( $plugin_id, $action )
 	{
 		if ( $plugin_id == $this->plugin_id() ) {
@@ -157,7 +174,7 @@ class StaticCache extends Plugin
   	
   	public static function get_query_id()
   	{
-  		return crc32( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY ) );
+  		return crc32( parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY) );
 	}
 	
 	public static function get_request_id( $user_id = null, $url = null )
@@ -167,7 +184,7 @@ class StaticCache extends Plugin
 			$user_id = $user instanceof User ? $user->id : 0;
 		}
 		if ( ! $url ) {
-			$url = Site::get_url( 'host' ) . rtrim( parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), '/' );
+			$url = Site::get_url( 'host' ) . rtrim( parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/' );
 		}
 		return crc32( $user_id . $url );
 	}
@@ -175,16 +192,17 @@ class StaticCache extends Plugin
 
 function StaticCache_ob_end_flush( $buffer )
 {
+	// prevent caching of 404 responses
+	if ( !URL::get_matched_rule() || URL::get_matched_rule()->name == 'display_404' ) {
+		return false;
+	}
 	$request_id = StaticCache::get_request_id();
 	$query_id = StaticCache::get_query_id();
 	
-	if ( Cache::has( array("staticcache", $request_id) ) ) {
-		$cache = Cache::get( array("staticcache", $request_id) );
-		$cache[$query_id] = $buffer;
-	}
-	else {
-		$cache = array( $query_id => $buffer );
-	}
+	$cache = array( $query_id => array(
+		'headers' => headers_list(),
+		'body' => $buffer
+		));
 	Cache::set( array("staticcache", $request_id), $cache );
 	
 	return false;
