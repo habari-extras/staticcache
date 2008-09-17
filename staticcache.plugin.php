@@ -4,6 +4,8 @@ class StaticCache extends Plugin
 {
 	const VERSION= '0.1';
 	
+	const EXPIRE = 86400;
+	
 	function info()
 	{
 		return array (
@@ -156,8 +158,11 @@ class StaticCache extends Plugin
 				case _t('Configure', 'staticcache') :
 					$ui = new FormUI( 'staticcache' );
 					
-					$api_key= $ui->append( 'textarea', 'repos', 'staticcache__ignore_list', _t('Do not cache any URI\'s matching these keywords (comma seperated): ', 'staticcache') );
-					$api_key->add_validator( 'validate_required' );
+					$ignore= $ui->append( 'textarea', 'ignore', 'staticcache__ignore_list', _t('Do not cache any URI\'s matching these keywords (comma seperated): ', 'staticcache') );
+					$ignore->add_validator( 'validate_required' );
+					
+					$expire= $ui->append( 'text', 'expire', 'staticcache__expire', _t('Cache expiry (in seconds): ', 'staticcache') );
+					$expire->add_validator( 'validate_required' );
 					
 					$ui->append( 'submit', 'save', _t( 'Save', 'staticcache' ) );
 					$ui->set_option( 'success_message', _t( 'Configuration saved', 'staticcache' ) );
@@ -198,12 +203,13 @@ function StaticCache_ob_end_flush( $buffer )
 	}
 	$request_id = StaticCache::get_request_id();
 	$query_id = StaticCache::get_query_id();
+	$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
 	
 	$cache = array( $query_id => array(
 		'headers' => headers_list(),
 		'body' => $buffer
 		));
-	Cache::set( array("staticcache", $request_id), $cache );
+	Cache::set( array("staticcache", $request_id), $cache, $expire );
 	
 	return false;
 }
