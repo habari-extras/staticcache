@@ -26,16 +26,28 @@ class StaticCache extends Plugin
 	
 	public function action_init()
 	{
+		/**
+		 * Allows plugins to add to the ignore list. An array of all URLs to ignore
+		 * is passed to the filter. Plugins should add a string of a URL to ignore
+		 * to the array. To ignore anything with '/foo-bar' in it you would do:
+		 * <code>$ignore_array[] = '/foo-bar';</code>
+		 */
+		$ignore_array = Plugins::filter(
+			'staticcache_ignore',
+			explode( ',', Options::get( 'staticcache__ignore_list' ) )
+			);
+		
+		/** sanitize the ignore list for preg_match */
 		$ignore_list = implode( 
 			'|',
 			array_map(
 				create_function( '$a', 'return preg_quote(trim($a), "@");' ),
-				explode( ',', Options::get( 'staticcache__ignore_list' ) )
+				$ignore_array
 				)
 			);
 		$request = Site::get_url( 'host' ) . $_SERVER['REQUEST_URI'];
 		
-		//don't cache pages matching ignore list keywords
+		/** don't cache pages matching ignore list keywords */
 		if ( preg_match( "@.*($ignore_list).*@i", $request ) ) {
 			return;
 		}
