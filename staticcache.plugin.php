@@ -2,7 +2,7 @@
 
 class StaticCache extends Plugin
 {
-	const VERSION= '0.1';
+	const VERSION = '0.1';
 	
 	const EXPIRE = 86400;
 	
@@ -170,10 +170,10 @@ class StaticCache extends Plugin
 				case _t('Configure', 'staticcache') :
 					$ui = new FormUI( 'staticcache' );
 					
-					$ignore= $ui->append( 'textarea', 'ignore', 'staticcache__ignore_list', _t('Do not cache any URI\'s matching these keywords (comma seperated): ', 'staticcache') );
+					$ignore = $ui->append( 'textarea', 'ignore', 'staticcache__ignore_list', _t('Do not cache any URI\'s matching these keywords (comma seperated): ', 'staticcache') );
 					$ignore->add_validator( 'validate_required' );
 					
-					$expire= $ui->append( 'text', 'expire', 'staticcache__expire', _t('Cache expiry (in seconds): ', 'staticcache') );
+					$expire = $ui->append( 'text', 'expire', 'staticcache__expire', _t('Cache expiry (in seconds): ', 'staticcache') );
 					$expire->add_validator( 'validate_required' );
 					
 					$ui->append( 'submit', 'save', _t( 'Save', 'staticcache' ) );
