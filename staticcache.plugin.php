@@ -2,7 +2,7 @@
 
 class StaticCache extends Plugin
 {
-	const VERSION = '0.1';
+	const VERSION = '0.2';
 	
 	const EXPIRE = 86400;
 	
@@ -10,7 +10,7 @@ class StaticCache extends Plugin
 	{
 		return array (
 			'name' => 'StaticCache',
-			'version' => '0.1',
+			'version' => '0.2',
 			'author' => 'Habari Community',
 			'license' => 'Apache License 2.0',
 			'description' => 'Caches static HTML ouptut'
