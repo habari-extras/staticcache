@@ -93,8 +93,10 @@ class StaticCache extends Plugin
 		$hits = Options::get('staticcache__hits');
 		$misses = Options::get('staticcache__misses');
 		$total = $hits + $misses;
-		$theme->static_cache_hits = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
-		$theme->static_cache_misses = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
+		$theme->static_cache_hits_pct = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
+		$theme->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
+		$theme->static_cache_hits = $hits;
+		$theme->static_cache_misses = $misses;
 		
 		$module['content'] = $theme->fetch( 'static_cache_stats' );
 		return $module;

@@ -8,10 +8,10 @@
 		</li>
 		
 		<li class="item clear">
-			<span class="pct80"><?php _e( 'Hits' ); ?></span><span class="comments pct20"><?php echo $static_cache_hits; ?>%</span>
+			<span class="pct80"><?php _e( 'Hits' ); ?></span><span class="comments pct20"><?php echo $static_cache_hits; ?> (<?php echo $static_cache_hits_pct; ?>%)</span>
 		</li>
 		
 		<li class="item clear">
-			<span class="pct80"><?php _e( 'Misses' ); ?></span><span class="comments pct20"><?php echo $static_cache_misses; ?>%</span>
+			<span class="pct80"><?php _e( 'Misses' ); ?></span><span class="comments pct20"><?php echo $static_cache_misses; ?> (<?php echo $static_cache_misses_pct; ?>%)</span>
 		</li>
 	</ul>
