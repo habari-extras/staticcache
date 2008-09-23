@@ -119,6 +119,11 @@ class StaticCache extends Plugin
 		$this->action_post_update_after( $post );
 	}
 	
+	public function action_post_delete_after( $post )
+	{
+		$this->action_post_update_after( $post );
+	}
+	
 	public function action_post_update_after( $post )
 	{
 		$urls = array(
@@ -131,6 +136,11 @@ class StaticCache extends Plugin
 	}
 	
 	public function action_comment_insert_after( $comment )
+	{
+		$this->action_comment_update_after( $comment );
+	}
+	
+	public function action_comment_delete_after( $comment )
 	{
 		$this->action_comment_update_after( $comment );
 	}
