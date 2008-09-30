@@ -102,6 +102,14 @@ class StaticCache extends Plugin
 		return $module;
 	}
 	
+	public function action_auth_ajax_clear_staticcache()
+	{
+		foreach ( Cache::get_group('staticcache') as $name => $data ) {
+			Cache::expire( array('staticcache', $name) );
+		}
+		echo json_encode("Cleared Static Cache's cache");
+	}
+	
 	public function cache_invalidate( $urls )
 	{
 		// account for annonymous user (id=0)
@@ -163,7 +171,7 @@ class StaticCache extends Plugin
 	public function action_plugin_activation( $file )
 	{
 		if ( $file == str_replace( '\\','/', $this->get_file() ) ) {
-			Options::set( 'staticcache__ignore_list', '/admin,/feedback,/user,?nocache' );
+			Options::set( 'staticcache__ignore_list', '/admin,/feedback,/user,/ajax,/auth_ajax,?nocache' );
 		}
 	}
 	
