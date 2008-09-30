@@ -104,9 +104,13 @@ class StaticCache extends Plugin
 	
 	public function cache_invalidate( $urls )
 	{
-		foreach ( Users::get_all() as $user ) {
+		// account for annonymous user (id=0)
+		$user_ids = array_map( create_function('$a', 'return $a->id;'), Users::get_all()->getArrayCopy() );
+		array_push($user_ids, "0");
+		
+		foreach ( $user_ids as $user_id ) {
 			foreach( $urls as $url ) {
-				$request_id = self::get_request_id( $user->id, $url );
+				$request_id = self::get_request_id( $user_id, $url );
 				if ( Cache::has( array("staticcache", $request_id) ) ) {
 					Cache::expire( array("staticcache", $request_id) );
 				}
