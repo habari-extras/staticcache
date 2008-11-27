@@ -24,6 +24,20 @@ class StaticCache extends Plugin
 			);
 	}
 	
+	public function alias()
+	{
+		return array(
+			'action_post_update_after' => array(
+				'action_post_insert_after',
+				'action_post_delete_after'
+			),
+			'action_comment_update_after' => array(
+				'action_comment_insert_after',
+				'action_comment_delete_after'
+			)
+		);
+	}
+	
 	public function action_init()
 	{
 		/**
@@ -107,10 +121,13 @@ class StaticCache extends Plugin
 		foreach ( Cache::get_group('staticcache') as $name => $data ) {
 			Cache::expire( array('staticcache', $name) );
 		}
+		Options::set('staticcache__hits', 0);
+		Options::set('staticcache__misses', 0);
+		Options::set('staticcache__average_time', 0);
 		echo json_encode("Cleared Static Cache's cache");
 	}
 	
-	public function cache_invalidate( $urls )
+	public function cache_invalidate( array $urls )
 	{
 		// account for annonymous user (id=0)
 		$user_ids = array_map( create_function('$a', 'return $a->id;'), Users::get_all()->getArrayCopy() );
@@ -126,17 +143,7 @@ class StaticCache extends Plugin
 		}
 	}
 	
-	public function action_post_insert_after( $post )
-	{
-		$this->action_post_update_after( $post );
-	}
-	
-	public function action_post_delete_after( $post )
-	{
-		$this->action_post_update_after( $post );
-	}
-	
-	public function action_post_update_after( $post )
+	public function action_post_update_after( Post $post )
 	{
 		$urls = array(
 			$post->comment_feed_link,
@@ -147,17 +154,7 @@ class StaticCache extends Plugin
 		$this->cache_invalidate( $urls );
 	}
 	
-	public function action_comment_insert_after( $comment )
-	{
-		$this->action_comment_update_after( $comment );
-	}
-	
-	public function action_comment_delete_after( $comment )
-	{
-		$this->action_comment_update_after( $comment );
-	}
-	
-	public function action_comment_update_after( $comment )
+	public function action_comment_update_after( Comment $comment )
 	{
 		$urls = array(
 			$comment->post->comment_feed_link,

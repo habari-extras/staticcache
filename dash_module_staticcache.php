@@ -26,6 +26,9 @@
 					function( json ) {
 						spinner.stop();
 						humanMsg.displayMsg( json );
+						$('.static-cache-module .item .pct20').each(function() {
+							$(this).html('0'); 
+						});
 					},
 					'json'
 				);
