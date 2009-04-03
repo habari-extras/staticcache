@@ -71,9 +71,8 @@ class StaticCache extends Plugin
 	}
 	
 	/**
-	 * Check if the requested URL matches the ignore list. If not, check if the 
-	 * URL is in cache and serve it, otherwise generate a new cache entry for the
-	 * requested URL using outbuffer callback to capture output.
+	 * Serves the cache page or starts the output buffer. Ignore URLs matching
+	 * the ignore list, and ignores if there are session messages.
 	 *
 	 * @see StaticCache_ob_end_flush()
 	 */
@@ -100,15 +99,15 @@ class StaticCache extends Plugin
 		);
 		$request = Site::get_url('host') . $_SERVER['REQUEST_URI'];
 		
-		// don't cache pages matching ignore list keywords
-		if ( preg_match("@.*($ignore_list).*@i", $request) ) {
+		// don't cache pages matching ignore list keywords, or if there are session messages
+		if ( preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() ) {
 			return;
 		}
 		
 		$request_id = self::get_request_id();
 		$query_id = self::get_query_id();
 		
-		if ( Cache::has( array("staticcache", $request_id) ) ) {
+		if ( Cache::has(array("staticcache", $request_id)) ) {
 			$cache = Cache::get( array("staticcache", $request_id) );
 			if ( isset( $cache[$query_id] ) ) {
 				global $profile_start;
