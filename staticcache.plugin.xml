@@ -1,8 +1,11 @@
-<plugin>
+<?xml version="1.0" encoding="utf-8" ?>
+<pluggable type="plugin">
 	<name>StaticCache</name>
+	<license url="http://www.apache.org/licenses/LICENSE-2.0.html">Apache Software License 2.0</license>
+	<author url="http://habariproject.org/">The Habari Community</author>
 	<version>0.2</version>
-	<author>Habari Community</author>
-	<license>Apache License 2.0</license>
-	<description>Caches static HTML ouptut</description>
-</plugin>
-
+	<url>http://habariproject.org/</url>
+	<description><![CDATA[Caches static HTML output.]]></description>
+	<copyright>2009</copyright>
+    <guid>340fb135-e1a1-4351-a81c-dac2f1795169</guid>
+</pluggable>

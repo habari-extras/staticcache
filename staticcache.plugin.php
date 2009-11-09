@@ -14,16 +14,6 @@ class StaticCache extends Plugin
 	
 	const EXPIRE = 86400;
 	
-	function info()
-	{
-		return array (
-			'name' => 'StaticCache',
-			'version' => self::VERSION,
-			'author' => 'Habari Community',
-			'license' => 'Apache License 2.0',
-			'description' => 'Caches static HTML ouptut'
-		);
-	}
 	/**
 	 * Help text to provide help to users on setting up.
 	 *
@@ -33,10 +23,10 @@ class StaticCache extends Plugin
 	 */
 	public function help()
 	{
-		return '<p>You should set your expiry time quite long if you have few writes. You 
+		return '<p>'._t( 'You should set your expiry time quite long if you have few writes. You
 			can see stats on the dashboard module to see the percentage of hits and misses
 			and adjust the expiry time accordingly. The dashboard module also provides a 
-			"clear cache" button to clear all cache and stats.</p>';
+			"clear cache" button to clear all cache and stats.' ).'</p>';
 	}
 	
 	/**
@@ -117,7 +107,7 @@ class StaticCache extends Plugin
 				}
 				echo $cache[$query_id]['body'];
 				$time = microtime(true) - $profile_start;
-				echo "<!-- Served by StaticCache in $time seconds -->";
+				echo '<!-- ' , _t( 'Served by StaticCache in ' ), $time, _t('seconds' ) , ' -->';
 				Options::set(
 					'staticcache__average_time',
 					(Options::get('staticcache__average_time') + $time) / 2
@@ -179,7 +169,7 @@ class StaticCache extends Plugin
 		Options::set('staticcache__hits', 0);
 		Options::set('staticcache__misses', 0);
 		Options::set('staticcache__average_time', 0);
-		echo json_encode("Cleared Static Cache's cache");
+		echo json_encode(_t( "Cleared Static Cache's cache" ) );
 	}
 	
 	/**
@@ -287,11 +277,18 @@ class StaticCache extends Plugin
 					$expire->add_validator('validate_required');
 					
 					$ui->append('submit', 'save', _t('Save', 'staticcache'));
-					$ui->set_option('success_message', _t('Configuration saved', 'staticcache'));
+					$ui->on_success( array( $this, 'save_config_msg' ) );
 					$ui->out();
 					break;
 			}
 		}
+	}
+
+    public static function save_config_msg( $ui )
+	{
+		$ui->save();
+		Session::notice( _t( 'Options saved' ) );
+		return false;
 	}
 	
 	/**
@@ -299,7 +296,7 @@ class StaticCache extends Plugin
 	 */
 	public function action_update_check()
 	{
-		Update::add('StaticCache', '340fb135-e1a1-4351-a81c-dac2f1795169',  $this->info->version);
+		Update::add('StaticCache', '340fb135-e1a1-4351-a81c-dac2f1795169',  self::VERSION);
 	}
 	
 	/**

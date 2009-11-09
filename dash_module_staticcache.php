@@ -35,6 +35,6 @@
 			}
 			/* ]]> */
 			</script>
-			<span class="pct100"><a class="link_as_button" href="javascript:clearStaticCache();">Clear Cache Data</a></span>
+			<span class="pct100"><a class="link_as_button" href="javascript:clearStaticCache();"><?php _e( 'Clear Cache Data' ); ?></a></span>
 		</li>
 	</ul>
