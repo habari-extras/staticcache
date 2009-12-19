@@ -342,10 +342,17 @@ function StaticCache_ob_end_flush( $buffer )
 	$query_id = StaticCache::get_query_id();
 	$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
 	
-	$cache = array( $query_id => array(
+	if ( Cache::has(array("staticcache", $request_id)) ) {
+		$cache = Cache::get(array("staticcache", $request_id));
+	}
+	else {
+		$cache = array();
+	}
+	
+	$cache[$query_id] = array(
 		'headers' => headers_list(),
 		'body' => $buffer
-		));
+	);
 	Cache::set( array("staticcache", $request_id), $cache, $expire );
 	
 	return false;
