@@ -231,14 +231,10 @@ class StaticCache extends Plugin
 	/**
 	 * Setup the initial ignore list on activation. Ignores URLs matching the following:
 	 * /admin, /feedback, /user, /ajax, /auth_ajax, and ?nocache
-	 *
-	 * @param string $file the plugin file being activates
 	 */
-	public function action_plugin_activation( $file )
+	public function action_plugin_activation()
 	{
-		if ( $file == str_replace( '\\','/', $this->get_file() ) ) {
-			Options::set('staticcache__ignore_list', '/admin,/feedback,/user,/ajax,/auth_ajax,?nocache');
-		}
+		Options::set('staticcache__ignore_list', '/admin,/feedback,/user,/ajax,/auth_ajax,?nocache');
 	}
 	
 	/**
@@ -306,7 +302,7 @@ class StaticCache extends Plugin
 	 */
 	public static function get_query_id()
 	{
-		return crc32(parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY));
+		return crc32(parse_url(Site::get_url('host') . $_SERVER['REQUEST_URI'], PHP_URL_QUERY));
 	}
 	
 	/**
@@ -323,7 +319,7 @@ class StaticCache extends Plugin
 			$user_id = $user instanceof User ? $user->id : 0;
 		}
 		if ( ! $url ) {
-			$url = Site::get_url('host') . rtrim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
+			$url = Site::get_url('host') . rtrim(parse_url(Site::get_url('host') . $_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 		}
 		return crc32($user_id . $url);
 	}
