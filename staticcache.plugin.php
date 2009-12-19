@@ -12,6 +12,7 @@ class StaticCache extends Plugin
 	const VERSION = 0.2;
 	const API_VERSION = 002;
 	
+	const GZ_COMPRESSION = 3;
 	const EXPIRE = 86400;
 	
 	/**
@@ -105,7 +106,16 @@ class StaticCache extends Plugin
 				foreach( $cache[$query_id]['headers'] as $header ) {
 					header($header);
 				}
-				echo $cache[$query_id]['body'];
+				
+				// check for compression
+				if ( isset($cache[$query_id]['compressed']) && $cache[$query_id]['compressed'] == true ) {
+					echo gzuncompress($cache[$query_id]['body']);
+				}
+				else {
+					echo $cache[$query_id]['body'];
+				}
+				
+				// do stats and output profiling
 				$time = microtime(true) - $profile_start;
 				echo '<!-- ' , _t( 'Served by StaticCache in ' ), $time, _t('seconds' ) , ' -->';
 				Options::set(
@@ -272,6 +282,11 @@ class StaticCache extends Plugin
 					$expire = $ui->append('text', 'expire', 'staticcache__expire', _t('Cache expiry (in seconds): ', 'staticcache'));
 					$expire->add_validator('validate_required');
 					
+					if ( extension_loaded('zlib') ) {
+						$expire = $ui->append('checkbox', 'compress', 'staticcache__compress', _t('Compress Cache To Save Space: ', 'staticcache'));
+						$expire->add_validator('validate_required');
+					}
+					
 					$ui->append('submit', 'save', _t('Save', 'staticcache'));
 					$ui->on_success( array( $this, 'save_config_msg' ) );
 					$ui->out();
@@ -342,6 +357,7 @@ function StaticCache_ob_end_flush( $buffer )
 	$query_id = StaticCache::get_query_id();
 	$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
 	
+	// get cache if exists
 	if ( Cache::has(array("staticcache", $request_id)) ) {
 		$cache = Cache::get(array("staticcache", $request_id));
 	}
@@ -349,10 +365,16 @@ function StaticCache_ob_end_flush( $buffer )
 		$cache = array();
 	}
 	
-	$cache[$query_id] = array(
-		'headers' => headers_list(),
-		'body' => $buffer
-	);
+	// see if we want compression and store cache
+	$cache[$query_id] = array( 'headers' => headers_list() );
+	if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
+		$cache[$query_id]['body'] = gzcompress($buffer, StaticCache::GZ_COMPRESSION);
+		$cache[$query_id]['compressed'] = true;
+	}
+	else {
+		$cache[$query_id]['body'] = $buffer;
+		$cache[$query_id]['compressed'] = false;
+	}
 	Cache::set( array("staticcache", $request_id), $cache, $expire );
 	
 	return false;
