@@ -9,8 +9,8 @@
  */
 class StaticCache extends Plugin
 {
-	const VERSION = 0.2;
-	const API_VERSION = 002;
+	const VERSION = 0.3;
+	const API_VERSION = 003;
 	
 	const GZ_COMPRESSION = 3;
 	const EXPIRE = 86400;
