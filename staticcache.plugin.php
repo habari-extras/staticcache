@@ -283,8 +283,7 @@ class StaticCache extends Plugin
 					$expire->add_validator('validate_required');
 					
 					if ( extension_loaded('zlib') ) {
-						$expire = $ui->append('checkbox', 'compress', 'staticcache__compress', _t('Compress Cache To Save Space: ', 'staticcache'));
-						$expire->add_validator('validate_required');
+						$compress = $ui->append('checkbox', 'compress', 'staticcache__compress', _t('Compress Cache To Save Space: ', 'staticcache'));
 					}
 					
 					$ui->append('submit', 'save', _t('Save', 'staticcache'));
