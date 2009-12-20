@@ -12,7 +12,7 @@ class StaticCache extends Plugin
 	const VERSION = 0.3;
 	const API_VERSION = 003;
 	
-	const GZ_COMPRESSION = 3;
+	const GZ_COMPRESSION = 5;
 	const EXPIRE = 86400;
 	
 	/**
@@ -365,7 +365,10 @@ function StaticCache_ob_end_flush( $buffer )
 	}
 	
 	// see if we want compression and store cache
-	$cache[$query_id] = array( 'headers' => headers_list() );
+	$cache[$query_id] = array(
+		'headers' => headers_list(),
+		'request_uri' => Site::get_url('host') . $_SERVER['REQUEST_URI']
+	);
 	if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
 		$cache[$query_id]['body'] = gzcompress($buffer, StaticCache::GZ_COMPRESSION);
 		$cache[$query_id]['compressed'] = true;
