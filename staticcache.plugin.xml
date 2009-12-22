@@ -8,4 +8,12 @@
 	<description><![CDATA[Caches static HTML output.]]></description>
 	<copyright>2009</copyright>
     <guid>340fb135-e1a1-4351-a81c-dac2f1795169</guid>
+    <help>
+		<value><![CDATA[
+			<p>You should set your expiry time quite long if you have few writes. You
+			can see stats on the dashboard module to see the percentage of hits and misses
+			and adjust the expiry time accordingly. The dashboard module also provides a 
+			"clear cache" button to clear all cache and stats.</p>
+		]]></value>
+	</help>
 </pluggable>
