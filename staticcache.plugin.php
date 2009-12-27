@@ -84,7 +84,7 @@ class StaticCache extends Plugin
 		 * nor pages with session messages
 		 */
 		if ( $request_method == 'PUT' || $request_method == 'POST'
-			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() || ) {
+			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() ) {
 			return;
 		}
 		
