@@ -78,9 +78,13 @@ class StaticCache extends Plugin
 			)
 		);
 		$request = Site::get_url('host') . $_SERVER['REQUEST_URI'];
+		$request_method = $_SERVER['REQUEST_METHOD'];
 		
-		// don't cache pages matching ignore list keywords, or if there are session messages
-		if ( preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() ) {
+		/* don't cache PUT or POST requests, pages matching ignore list keywords, 
+		 * nor pages with session messages
+		 */
+		if ( $request_method == 'PUT' || $request_method == 'POST'
+			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() || ) {
 			return;
 		}
 		
