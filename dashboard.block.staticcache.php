@@ -1,18 +1,18 @@
 	<ul class="items">
 		<li class="item clear">
-			<span class="pct80"><?php _e('Average page generation time' ); ?></span><span class="comments pct20"><?php echo $static_cache_average; ?> sec.</span>
+			<span class="pct80"><?php _e('Average page generation time' ); ?></span><span class="comments pct20"><?php echo $content->static_cache_average; ?> sec.</span>
 		</li>
 		
 		<li class="item clear">
-			<span class="pct80"><?php _e( 'Total number of pages cached' ); ?></span><span class="comments pct20"><?php echo $static_cache_pages; ?></span>
+			<span class="pct80"><?php _e( 'Total number of pages cached' ); ?></span><span class="comments pct20"><?php echo $content->static_cache_pages; ?></span>
 		</li>
 		
 		<li class="item clear">
-			<span class="pct80"><?php _e( 'Hits' ); ?></span><span class="comments pct20"><?php echo $static_cache_hits; ?> (<?php echo $static_cache_hits_pct; ?>%)</span>
+			<span class="pct80"><?php _e( 'Hits' ); ?></span><span class="comments pct20"><?php echo $content->static_cache_hits; ?> (<?php echo $content->static_cache_hits_pct; ?>%)</span>
 		</li>
 		
 		<li class="item clear">
-			<span class="pct80"><?php _e( 'Misses' ); ?></span><span class="comments pct20"><?php echo $static_cache_misses; ?> (<?php echo $static_cache_misses_pct; ?>%)</span>
+			<span class="pct80"><?php _e( 'Misses' ); ?></span><span class="comments pct20"><?php echo $content->static_cache_misses; ?> (<?php echo $content->static_cache_misses_pct; ?>%)</span>
 		</li>
 		
 		<li class="item clear">

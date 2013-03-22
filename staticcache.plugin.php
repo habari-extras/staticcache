@@ -150,35 +150,32 @@ class StaticCache extends Plugin
 	 * @param array $modules Available dash modules
 	 * @return array modules array
 	 */
-	public function filter_dash_modules( array $modules )
+	public function filter_dashboard_block_list($block_list)
 	{
-		$this->add_template('static_cache_stats', dirname( __FILE__ ) . '/dash_module_staticcache.php');
-		$modules[] = 'Static Cache';
-		return $modules;
+		$block_list['staticcache'] = 'Static Cache';
+		$this->add_template( 'dashboard.block.staticcache', dirname( __FILE__ ) . '/dashboard.block.staticcache.php' );
+		return $block_list;
 	}
 	
 	/**
 	 * Filters the static cache dash module to add the theme template output.
 	 *
-	 * @param array $module the struture of the module
+	 * @param Block $block the dashboard block
 	 * @param Theme the current theme from the handler
 	 * @return array the modified module structure
 	 */
-	public function filter_dash_module_static_cache( array $module, $id, Theme $theme )
+	public function action_block_content_staticcache( Block $block, Theme $theme )
 	{
-		$theme->static_cache_average = sprintf( '%.4f', Cache::get(array(self::STATS_GROUP_NAME, 'avg')) );
-		$theme->static_cache_pages = count(Cache::get_group(self::GROUP_NAME));
+		$block->static_cache_average = sprintf( '%.4f', Cache::get(array(self::STATS_GROUP_NAME, 'avg')) );
+		$block->static_cache_pages = count(Cache::get_group(self::GROUP_NAME));
 		
 		$hits = Cache::get(array(self::STATS_GROUP_NAME, 'hits'));
 		$misses = Cache::get(array(self::STATS_GROUP_NAME, 'misses'));
 		$total = $hits + $misses;
-		$theme->static_cache_hits_pct = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
-		$theme->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
-		$theme->static_cache_hits = $hits;
-		$theme->static_cache_misses = $misses;
-		
-		$module['content'] = $theme->fetch('static_cache_stats');
-		return $module;
+		$block->static_cache_hits_pct = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
+		$block->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
+		$block->static_cache_hits = $hits;
+		$block->static_cache_misses = $misses;
 	}
 	
 	/**
