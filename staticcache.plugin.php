@@ -114,7 +114,9 @@ class StaticCache extends Plugin
 		}
 		// record miss
 		$this->record_stats('miss');
-		ob_start('StaticCache_ob_end_flush');
+		// register hook
+		Plugins::register(array('StaticCache', 'store_final_output'), 'filter', 'final_output', 16);
+		//ob_start('StaticCache_ob_end_flush');
 	}
 	
 	/**
@@ -136,7 +138,8 @@ class StaticCache extends Plugin
 				Cache::set( array(self::STATS_GROUP_NAME, 'avg'), $avg, self::EXPIRE_STATS );
 				Cache::set( array(self::STATS_GROUP_NAME, 'hits'), $hits + 1, self::EXPIRE_STATS );
 				// @todo add option to have output or not
-				echo '<!-- ' , _t( 'Served by StaticCache in %s seconds', array($pagetime), 'staticcache' ) , ' -->';
+				//echo '<!-- ' , _t( 'Served by StaticCache in %s seconds', array($pagetime), 'staticcache' ) , ' -->';
+				header('X-StaticCache-Stats: '.$pagetime);
 				break;
 			case 'miss':
 				Cache::set( array(self::STATS_GROUP_NAME, 'misses'), Cache::get(array(self::STATS_GROUP_NAME, 'misses')) + 1, self::EXPIRE_STATS );
@@ -349,49 +352,52 @@ class StaticCache extends Plugin
 		}
 		return crc32($user_id . $url);
 	}
+
+	/**
+	 * The output buffer callback used to capture the output and cache it.
+	 *
+	 * @see StaticCache::init()
+	 * @param string $buffer The output buffer contents
+	 * @return string $buffer unchanged
+	 */
+	public static function store_final_output( $buffer )
+	{
+		// prevent caching of 404 responses
+		if ( !URL::get_matched_rule() || URL::get_matched_rule()->name == 'display_404' ) {
+			return $buffer;
+		}
+		$request_id = StaticCache::get_request_id();
+		$query_id = StaticCache::get_query_id();
+		$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
+		
+		// get cache if exists
+		if ( Cache::has(array(StaticCache::GROUP_NAME, $request_id)) ) {
+			$cache = Cache::get(array(StaticCache::GROUP_NAME, $request_id));
+		}
+		else {
+			$cache = array();
+		}
+		
+		// see if we want compression and store cache
+		$cache[$query_id] = array(
+			'headers' => headers_list(),
+			'request_uri' => Site::get_url('host') . $_SERVER['REQUEST_URI']
+		);
+		if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
+			$cache[$query_id]['body'] = gzcompress($buffer, StaticCache::GZ_COMPRESSION);
+			$cache[$query_id]['compressed'] = true;
+		}
+		else {
+			$cache[$query_id]['body'] = $buffer;
+			$cache[$query_id]['compressed'] = false;
+		}
+		Cache::set( array(StaticCache::GROUP_NAME, $request_id), $cache, $expire );
+		
+		return $buffer;
+	}
+
 }
 
-/**
- * The output buffer callback used to capture the output and cache it.
- *
- * @see StaticCache::init()
- * @param string $buffer The output buffer contents
- * @return bool false
- */
-function StaticCache_ob_end_flush( $buffer )
-{
-	// prevent caching of 404 responses
-	if ( !URL::get_matched_rule() || URL::get_matched_rule()->name == 'display_404' ) {
-		return false;
-	}
-	$request_id = StaticCache::get_request_id();
-	$query_id = StaticCache::get_query_id();
-	$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
-	
-	// get cache if exists
-	if ( Cache::has(array(StaticCache::GROUP_NAME, $request_id)) ) {
-		$cache = Cache::get(array(StaticCache::GROUP_NAME, $request_id));
-	}
-	else {
-		$cache = array();
-	}
-	
-	// see if we want compression and store cache
-	$cache[$query_id] = array(
-		'headers' => headers_list(),
-		'request_uri' => Site::get_url('host') . $_SERVER['REQUEST_URI']
-	);
-	if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
-		$cache[$query_id]['body'] = gzcompress($buffer, StaticCache::GZ_COMPRESSION);
-		$cache[$query_id]['compressed'] = true;
-	}
-	else {
-		$cache[$query_id]['body'] = $buffer;
-		$cache[$query_id]['compressed'] = false;
-	}
-	Cache::set( array(StaticCache::GROUP_NAME, $request_id), $cache, $expire );
-	
-	return false;
-}
+
 
 ?>
