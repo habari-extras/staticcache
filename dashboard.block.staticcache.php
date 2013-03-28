@@ -19,7 +19,7 @@
 			<script type="text/javascript">
 			/* <![CDATA[ */
 			function clearStaticCache() {
-				var url = '<?php URL::out('auth_ajax', 'context=clear_staticcache'); ?>';
+				var url = '<?php Habari\URL::out('auth_ajax', 'context=clear_staticcache'); ?>';
 				spinner.start();
 				$.get(
 					url,
