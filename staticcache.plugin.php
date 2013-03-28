@@ -117,7 +117,7 @@ class StaticCache extends Plugin
 		// record miss
 		$this->record_stats('miss');
 		// register hook
-		Plugins::register(array('StaticCache', 'store_final_output'), 'filter', 'final_output', 16);
+		Plugins::register(array('Habari\\StaticCache', 'store_final_output'), 'filter', 'final_output', 16);
 		//ob_start('StaticCache_ob_end_flush');
 	}
 	
