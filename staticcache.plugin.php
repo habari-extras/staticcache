@@ -1,6 +1,6 @@
 <?php
 
-namespace Habari;
+//namespace Habari;
 
 /**
  * @package staticcache
@@ -11,6 +11,7 @@ namespace Habari;
  */
 class StaticCache extends Plugin
 {
+	const DEBUG = false;
 	const VERSION = 0.3;
 	const API_VERSION = 004;
 	
@@ -83,10 +84,10 @@ class StaticCache extends Plugin
 		$request_method = $_SERVER['REQUEST_METHOD'];
 		
 		/* don't cache PUT or POST requests, pages matching ignore list keywords, 
-		 * nor pages with session messages
+		 * nor pages with session messages, nor loggedin users
 		 */
 		if ( $request_method == 'PUT' || $request_method == 'POST'
-			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() ) {
+			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() || User::identify()->loggedin ) {
 			return;
 		}
 		
@@ -102,7 +103,8 @@ class StaticCache extends Plugin
 				foreach( $cache[$query_id]['headers'] as $header ) {
 					header($header);
 				}
-				// check for compression
+				// check for compression 
+				// @todo directly send compressed data to browser if webserver is not compressing.
 				if ( isset($cache[$query_id]['compressed']) && $cache[$query_id]['compressed'] == true ) {
 					echo gzuncompress($cache[$query_id]['body']);
 				}
@@ -140,7 +142,6 @@ class StaticCache extends Plugin
 				Cache::set( array(self::STATS_GROUP_NAME, 'avg'), $avg, self::EXPIRE_STATS );
 				Cache::set( array(self::STATS_GROUP_NAME, 'hits'), $hits + 1, self::EXPIRE_STATS );
 				// @todo add option to have output or not
-				//echo '<!-- ' , _t( 'Served by StaticCache in %s seconds', array($pagetime), 'staticcache' ) , ' -->';
 				header('X-StaticCache-Stats: '.$pagetime);
 				break;
 			case 'miss':
@@ -215,6 +216,7 @@ class StaticCache extends Plugin
 				$request_id = self::get_request_id( $user_id, $url );
 				if ( Cache::has(array(self::GROUP_NAME, $request_id)) ) {
 					Cache::expire(array(self::GROUP_NAME, $request_id));
+					EventLog::log('Clearing request ID: '.$request_id,'info','plugin','StaticCache');
 				}
 			}
 		}
@@ -261,7 +263,7 @@ class StaticCache extends Plugin
 	 */
 	public function action_plugin_activation()
 	{
-		Options::set('staticcache__ignore_list', '/admin,/feedback,/user,/ajax,/auth_ajax,?nocache');
+		Options::set('staticcache__ignore_list', '/cron,/admin,/feedback,/auth,/ajax,/auth_ajax,?nocache');
 	}
 	
 	/**
@@ -370,7 +372,7 @@ class StaticCache extends Plugin
 		}
 		$request_id = StaticCache::get_request_id();
 		$query_id = StaticCache::get_query_id();
-		$expire = Options::get('staticcache__expire') ? (int) Options::get('staticcache__expire') : StaticCache::EXPIRE;
+		$expire = Options::get('staticcache__expire', StaticCache::EXPIRE);
 		
 		// get cache if exists
 		if ( Cache::has(array(StaticCache::GROUP_NAME, $request_id)) ) {
@@ -380,9 +382,16 @@ class StaticCache extends Plugin
 			$cache = array();
 		}
 		
+		// don't cache cookie headers (ie. session cookies)
+		$headers = headers_list();
+		foreach ( $headers as $i => $head ) {
+			if ( stripos($head, 'cookie') !== false ) {
+				unset($headers[$i]);
+			}
+		}
 		// see if we want compression and store cache
 		$cache[$query_id] = array(
-			'headers' => headers_list(),
+			'headers' => $headers,
 			'request_uri' => Site::get_url('host') . $_SERVER['REQUEST_URI']
 		);
 		if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
