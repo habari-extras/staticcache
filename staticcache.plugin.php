@@ -14,14 +14,14 @@ class StaticCache extends Plugin
 	const DEBUG = false;
 	const VERSION = 0.3;
 	const API_VERSION = 004;
-	
+
 	const GZ_COMPRESSION = 4;
 	const EXPIRE = 86400;
 	const EXPIRE_STATS = 604800;
-	
+
 	const GROUP_NAME = 'staticcache';
 	const STATS_GROUP_NAME = 'staticcache_stats';
-	
+
 	/**
 	 * Set a priority of 1 on action_init so we run first
 	 *
@@ -31,9 +31,9 @@ class StaticCache extends Plugin
 	{
 		return array(
 			'action_init' => 1
-			);
+		);
 	}
-	
+
 	/**
 	 * Create aliases to additional hooks
 	 *
@@ -52,7 +52,7 @@ class StaticCache extends Plugin
 			)
 		);
 	}
-	
+
 	/**
 	 * Serves the cache page or starts the output buffer. Ignore URLs matching
 	 * the ignore list, and ignores if there are session messages.
@@ -69,11 +69,11 @@ class StaticCache extends Plugin
 		 */
 		$ignore_array = Plugins::filter(
 			'staticcache_ignore',
-			explode(',', Options::get('staticcache__ignore_list' ))
+			explode(',', Options::get('staticcache__ignore_list'))
 		);
-		
+
 		// sanitize the ignore list for preg_match
-		$ignore_list = implode( 
+		$ignore_list = implode(
 			'|',
 			array_map(
 				create_function('$a', 'return preg_quote(trim($a), "@");'),
@@ -82,30 +82,31 @@ class StaticCache extends Plugin
 		);
 		$request = Site::get_url('host') . $_SERVER['REQUEST_URI'];
 		$request_method = $_SERVER['REQUEST_METHOD'];
-		
-		/* don't cache PUT or POST requests, pages matching ignore list keywords, 
+
+		/* don't cache PUT or POST requests, pages matching ignore list keywords,
 		 * nor pages with session messages, nor loggedin users
 		 */
-		if ( $request_method == 'PUT' || $request_method == 'POST'
-			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() || User::identify()->loggedin ) {
+		if ($request_method == 'PUT' || $request_method == 'POST'
+			|| preg_match("@.*($ignore_list).*@i", $request) || Session::has_messages() || User::identify()->loggedin
+		) {
 			return;
 		}
-		
+
 		$request_id = self::get_request_id();
 		$query_id = self::get_query_id();
-		
-		if ( Cache::has(array(self::GROUP_NAME, $request_id)) ) {
-			$cache = Cache::get( array(self::GROUP_NAME, $request_id) );
-			if ( isset( $cache[$query_id] ) ) {
+
+		if (Cache::has(array(self::GROUP_NAME, $request_id))) {
+			$cache = Cache::get(array(self::GROUP_NAME, $request_id));
+			if (isset($cache[$query_id])) {
 				global $profile_start;
-				
+
 				// send the cached headers
-				foreach( $cache[$query_id]['headers'] as $header ) {
+				foreach ($cache[$query_id]['headers'] as $header) {
 					header($header);
 				}
-				// check for compression 
+				// check for compression
 				// @todo directly send compressed data to browser if webserver is not compressing.
-				if ( isset($cache[$query_id]['compressed']) && $cache[$query_id]['compressed'] == true ) {
+				if (isset($cache[$query_id]['compressed']) && $cache[$query_id]['compressed'] == true) {
 					echo gzuncompress($cache[$query_id]['body']);
 				}
 				else {
@@ -120,9 +121,8 @@ class StaticCache extends Plugin
 		$this->record_stats('miss');
 		// register hook
 		Plugins::register(array('StaticCache', 'store_final_output'), 'filter', 'final_output', 16);
-		//ob_start('StaticCache_ob_end_flush');
 	}
-	
+
 	/**
 	 * Record StaticCaches stats in the cache itself to avoid DB writes.
 	 * Data includes hits, misses, and avg.
@@ -130,26 +130,25 @@ class StaticCache extends Plugin
 	 * @param string $type type of record, either hit or miss
 	 * @param double $profile_start start of the profiling
 	 */
-	protected function record_stats( $type, $profile_start = null )
+	protected function record_stats($type, $profile_start = null)
 	{
-		switch ( $type ) {
+		switch ($type) {
 			case 'hit':
 				// do stats and output profiling
 				$pagetime = microtime(true) - $profile_start;
-				$hits = (int) Cache::get(array(self::STATS_GROUP_NAME, 'hits'));
-				$profile = (double) Cache::get(array(self::STATS_GROUP_NAME, 'avg'));
+				$hits = (int)Cache::get(array(self::STATS_GROUP_NAME, 'hits'));
+				$profile = (double)Cache::get(array(self::STATS_GROUP_NAME, 'avg'));
 				$avg = ($profile * $hits + $pagetime) / ($hits + 1);
-				Cache::set( array(self::STATS_GROUP_NAME, 'avg'), $avg, self::EXPIRE_STATS );
-				Cache::set( array(self::STATS_GROUP_NAME, 'hits'), $hits + 1, self::EXPIRE_STATS );
-				// @todo add option to have output or not
-				header('X-StaticCache-Stats: '.$pagetime);
+				Cache::set(array(self::STATS_GROUP_NAME, 'avg'), $avg, self::EXPIRE_STATS);
+				Cache::set(array(self::STATS_GROUP_NAME, 'hits'), $hits + 1, self::EXPIRE_STATS);
+				header('X-StaticCache-Stats: ' . $pagetime);
 				break;
 			case 'miss':
-				Cache::set( array(self::STATS_GROUP_NAME, 'misses'), Cache::get(array(self::STATS_GROUP_NAME, 'misses')) + 1, self::EXPIRE_STATS );
+				Cache::set(array(self::STATS_GROUP_NAME, 'misses'), Cache::get(array(self::STATS_GROUP_NAME, 'misses')) + 1, self::EXPIRE_STATS);
 				break;
 		}
 	}
-	
+
 	/**
 	 * Add the Static Cache dashboard module
 	 *
@@ -159,10 +158,10 @@ class StaticCache extends Plugin
 	public function filter_dashboard_block_list($block_list)
 	{
 		$block_list['staticcache'] = 'Static Cache';
-		$this->add_template( 'dashboard.block.staticcache', dirname( __FILE__ ) . '/dashboard.block.staticcache.php' );
+		$this->add_template('dashboard.block.staticcache', dirname(__FILE__) . '/dashboard.block.staticcache.php');
 		return $block_list;
 	}
-	
+
 	/**
 	 * Filters the static cache dash module to add the theme template output.
 	 *
@@ -170,47 +169,48 @@ class StaticCache extends Plugin
 	 * @param Theme the current theme from the handler
 	 * @return array the modified module structure
 	 */
-	public function action_block_content_staticcache( Block $block, Theme $theme )
+	public function action_block_content_staticcache(Block $block, Theme $theme)
 	{
-		$block->static_cache_average = sprintf( '%.4f', Cache::get(array(self::STATS_GROUP_NAME, 'avg')) );
+		$block->static_cache_average = sprintf('%.4f', Cache::get(array(self::STATS_GROUP_NAME, 'avg')));
 		$block->static_cache_pages = count(Cache::get_group(self::GROUP_NAME));
-		
+
 		$hits = Cache::get(array(self::STATS_GROUP_NAME, 'hits'));
 		$misses = Cache::get(array(self::STATS_GROUP_NAME, 'misses'));
 		$total = $hits + $misses;
-		$block->static_cache_hits_pct = sprintf('%.0f', $total > 0 ? ($hits/$total)*100 : 0);
-		$block->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
+		$block->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses / $total) * 100 : 0);
 		$block->static_cache_hits = $hits;
 		$block->static_cache_misses = $misses;
 		$block->static_cache_expire = $this->secs_to_human(Options::get('staticcache__expire', StaticCache::EXPIRE));
 	}
 
-	/*
+	/**
 	 * Convert seconds to human readable text.
 	 *
+	 * @param int the number of seconds to convert
+	 * @return string a human readable time period
 	 */
 	public function secs_to_human($secs)
 	{
-	        $units = array(
-	                "week"   => 7*24*3600,
-	                "day"    =>   24*3600,
-	                "hour"   =>      3600,
-	                "minute" =>        60,
-	                "second" =>         1,
-	        );
-	
+		$units = array(
+			"week" => 7 * 24 * 3600,
+			"day" => 24 * 3600,
+			"hour" => 3600,
+			"minute" => 60,
+			"second" => 1,
+		);
+
 		// specifically handle zero
-	        if ( $secs == 0 ) return "0 seconds";
-	
-	        $s = "";
-	        foreach ( $units as $name => $divisor ) {
-	                if ( $quot = intval($secs / $divisor) ) {
-	                        $s .= "$quot $name";
-	                        $s .= (abs($quot) > 1 ? "s" : "") . ", ";
-	                        $secs -= $quot * $divisor;
-	                }
-	        }
-	        return substr($s, 0, -2);
+		if ($secs == 0) return "0 seconds";
+
+		$s = "";
+		foreach ($units as $name => $divisor) {
+			if ($quot = intval($secs / $divisor)) {
+				$s .= "$quot $name";
+				$s .= (abs($quot) > 1 ? "s" : "") . ", ";
+				$secs -= $quot * $divisor;
+			}
+		}
+		return substr($s, 0, -2);
 	}
 
 	/**
@@ -219,55 +219,55 @@ class StaticCache extends Plugin
 	 */
 	public function action_auth_ajax_clear_staticcache()
 	{
-		foreach ( Cache::get_group(self::GROUP_NAME) as $name => $data ) {
-			Cache::expire( array(self::GROUP_NAME, $name) );
+		foreach (Cache::get_group(self::GROUP_NAME) as $name => $data) {
+			Cache::expire(array(self::GROUP_NAME, $name));
 		}
-		foreach ( Cache::get_group(self::STATS_GROUP_NAME) as $name => $data ) {
-			Cache::expire( array(self::STATS_GROUP_NAME, $name) );
+		foreach (Cache::get_group(self::STATS_GROUP_NAME) as $name => $data) {
+			Cache::expire(array(self::STATS_GROUP_NAME, $name));
 		}
-		echo json_encode(_t( "Cleared Static Cache's cache" ) );
+		echo json_encode(_t("Cleared Static Cache's cache"));
 	}
-	
+
 	/**
 	 * Invalidates (expires) the cache entries for the give list of URLs.
 	 *
 	 * @param array $urls An array of urls to clear
 	 */
-	public function cache_invalidate( array $urls )
+	public function cache_invalidate(array $urls)
 	{
 		// account for annonymous user (id=0)
-		$user_ids = array_map( create_function('$a', 'return $a->id;'), Users::get_all()->getArrayCopy() );
+		$user_ids = array_map(create_function('$a', 'return $a->id;'), Users::get_all()->getArrayCopy());
 		array_push($user_ids, "0");
-		
+
 		// expire the urls for each user id
-		foreach ( $user_ids as $user_id ) {
-			foreach( $urls as $url ) {
-				$request_id = self::get_request_id( $user_id, $url );
-				if ( Cache::has(array(self::GROUP_NAME, $request_id)) ) {
+		foreach ($user_ids as $user_id) {
+			foreach ($urls as $url) {
+				$request_id = self::get_request_id($user_id, $url);
+				if (Cache::has(array(self::GROUP_NAME, $request_id))) {
 					Cache::expire(array(self::GROUP_NAME, $request_id));
-					EventLog::log('Clearing request ID: '.$request_id,'info','plugin','StaticCache');
+					EventLog::log('Clearing request ID: ' . $request_id, 'info', 'plugin', 'StaticCache');
 				}
 			}
 		}
 	}
-	
+
 	/**
 	 * Clears cache for the given post after it's updated. includes all CRUD operations.
 	 *
 	 * @param Post the post object to clear cache for
 	 * @see StaticCache::cache_invalidate()
 	 */
-	public function action_post_update_after( Post $post )
+	public function action_post_update_after(Post $post)
 	{
 		$urls = array(
 			$post->comment_feed_link,
 			$post->permalink,
 			URL::get('atom_feed', 'index=1'),
 			Site::get_url('habari')
-			);
+		);
 		$this->cache_invalidate($urls);
 	}
-	
+
 	/**
 	 * Clears cache for the given comments parent post after it's updated. includes all
 	 * CRUD operations.
@@ -275,17 +275,17 @@ class StaticCache extends Plugin
 	 * @param Comment the comment object to clear cache for it's parent post
 	 * @see StaticCache::cache_invalidate()
 	 */
-	public function action_comment_update_after( Comment $comment )
+	public function action_comment_update_after(Comment $comment)
 	{
 		$urls = array(
 			$comment->post->comment_feed_link,
 			$comment->post->permalink,
 			URL::get('atom_feed', 'index=1'),
 			Site::get_url('habari')
-			);
+		);
 		$this->cache_invalidate($urls);
 	}
-	
+
 	/**
 	 * Setup the initial ignore list on activation. Ignores URLs matching the following:
 	 * /admin, /feedback, /user, /ajax, /auth_ajax, and ?nocache
@@ -294,7 +294,7 @@ class StaticCache extends Plugin
 	{
 		Options::set('staticcache__ignore_list', '/cron,/admin,/feedback,/auth,/ajax,/auth_ajax,?nocache');
 	}
-	
+
 	/**
 	 * Adds a 'configure' action to the pllugin page.
 	 *
@@ -302,14 +302,14 @@ class StaticCache extends Plugin
 	 * @param strinf $plugin_id the plugins id
 	 * @return array the actions to add
 	 */
-	public function filter_plugin_config( array $actions, $plugin_id )
+	public function filter_plugin_config(array $actions, $plugin_id)
 	{
-		if ( $plugin_id == $this->plugin_id() ) {
-			$actions[]= _t('Configure', 'staticcache');
+		if ($plugin_id == $this->plugin_id()) {
+			$actions[] = _t('Configure', 'staticcache');
 		}
 		return $actions;
 	}
-	
+
 	/**
 	 * Adds the configure UI
 	 *
@@ -317,46 +317,46 @@ class StaticCache extends Plugin
 	 * @param string $plugin_id the plugins id
 	 * @param string $action the action being performed
 	 */
-	public function action_plugin_ui( $plugin_id, $action )
+	public function action_plugin_ui($plugin_id, $action)
 	{
-		if ( $plugin_id == $this->plugin_id() ) {
-			switch ( $action ) {
+		if ($plugin_id == $this->plugin_id()) {
+			switch ($action) {
 				case _t('Configure', 'staticcache') :
 					$ui = new FormUI('staticcache');
-					
+
 					$ignore = $ui->append('textarea', 'ignore', 'staticcache__ignore_list', _t('Do not cache any URI\'s matching these keywords (comma seperated): ', 'staticcache'));
 					$ignore->add_validator('validate_required');
-					
+
 					$expire = $ui->append('text', 'expire', 'staticcache__expire', _t('Cache expiry (in seconds): ', 'staticcache'));
 					$expire->add_validator('validate_required');
-					
-					if ( extension_loaded('zlib') ) {
+
+					if (extension_loaded('zlib')) {
 						$compress = $ui->append('checkbox', 'compress', 'staticcache__compress', _t('Compress Cache To Save Space: ', 'staticcache'));
 					}
-					
+
 					$ui->append('submit', 'save', _t('Save', 'staticcache'));
-					$ui->on_success( array( $this, 'save_config_msg' ) );
+					$ui->on_success(array($this, 'save_config_msg'));
 					$ui->out();
 					break;
 			}
 		}
 	}
 
-    public static function save_config_msg( $ui )
+	public static function save_config_msg($ui)
 	{
 		$ui->save();
-		Session::notice( _t( 'Options saved' ) );
+		Session::notice(_t('Options saved'));
 		return false;
 	}
-	
+
 	/**
 	 * Adds the plugin to the update check routine.
 	 */
 	public function action_update_check()
 	{
-		Update::add('StaticCache', '340fb135-e1a1-4351-a81c-dac2f1795169',  self::VERSION);
+		Update::add('StaticCache', '340fb135-e1a1-4351-a81c-dac2f1795169', self::VERSION);
 	}
-	
+
 	/**
 	 * gets a unique id for the current query string requested.
 	 *
@@ -366,7 +366,7 @@ class StaticCache extends Plugin
 	{
 		return crc32(parse_url(Site::get_url('host') . $_SERVER['REQUEST_URI'], PHP_URL_QUERY));
 	}
-	
+
 	/**
 	 * Gets a unique id for the given request URL and user id.
 	 *
@@ -374,13 +374,13 @@ class StaticCache extends Plugin
 	 * @param string The URL. Defaults to the current REQUEST_URI
 	 * @return string Request ID
 	 */
-	public static function get_request_id( $user_id = null, $url = null )
+	public static function get_request_id($user_id = null, $url = null)
 	{
-		if ( ! $user_id ) {
+		if (!$user_id) {
 			$user = User::identify();
 			$user_id = $user instanceof User ? $user->id : 0;
 		}
-		if ( ! $url ) {
+		if (!$url) {
 			$url = Site::get_url('host') . rtrim(parse_url(Site::get_url('host') . $_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 		}
 		return crc32($user_id . $url);
@@ -393,28 +393,28 @@ class StaticCache extends Plugin
 	 * @param string $buffer The output buffer contents
 	 * @return string $buffer unchanged
 	 */
-	public static function store_final_output( $buffer )
+	public static function store_final_output($buffer)
 	{
 		// prevent caching of 404 responses
-		if ( !URL::get_matched_rule() || URL::get_matched_rule()->name == 'display_404' ) {
+		if (!URL::get_matched_rule() || URL::get_matched_rule()->name == 'display_404') {
 			return $buffer;
 		}
 		$request_id = StaticCache::get_request_id();
 		$query_id = StaticCache::get_query_id();
 		$expire = Options::get('staticcache__expire', StaticCache::EXPIRE);
-		
+
 		// get cache if exists
-		if ( Cache::has(array(StaticCache::GROUP_NAME, $request_id)) ) {
+		if (Cache::has(array(StaticCache::GROUP_NAME, $request_id))) {
 			$cache = Cache::get(array(StaticCache::GROUP_NAME, $request_id));
 		}
 		else {
 			$cache = array();
 		}
-		
+
 		// don't cache cookie headers (ie. session cookies)
 		$headers = headers_list();
-		foreach ( $headers as $i => $head ) {
-			if ( stripos($head, 'cookie') !== false ) {
+		foreach ($headers as $i => $head) {
+			if (stripos($head, 'cookie') !== false) {
 				unset($headers[$i]);
 			}
 		}
@@ -423,7 +423,7 @@ class StaticCache extends Plugin
 			'headers' => $headers,
 			'request_uri' => Site::get_url('host') . $_SERVER['REQUEST_URI']
 		);
-		if ( Options::get('staticcache__compress') && extension_loaded('zlib') ) {
+		if (Options::get('staticcache__compress') && extension_loaded('zlib')) {
 			$cache[$query_id]['body'] = gzcompress($buffer, StaticCache::GZ_COMPRESSION);
 			$cache[$query_id]['compressed'] = true;
 		}
@@ -431,13 +431,12 @@ class StaticCache extends Plugin
 			$cache[$query_id]['body'] = $buffer;
 			$cache[$query_id]['compressed'] = false;
 		}
-		Cache::set( array(StaticCache::GROUP_NAME, $request_id), $cache, $expire );
-		
+		Cache::set(array(StaticCache::GROUP_NAME, $request_id), $cache, $expire);
+
 		return $buffer;
 	}
 
 }
-
 
 
 ?>
