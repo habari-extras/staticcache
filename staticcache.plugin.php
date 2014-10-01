@@ -182,8 +182,37 @@ class StaticCache extends Plugin
 		$block->static_cache_misses_pct = sprintf('%.0f', $total > 0 ? ($misses/$total)*100 : 0);
 		$block->static_cache_hits = $hits;
 		$block->static_cache_misses = $misses;
+		$block->static_cache_expire = $this->secs_to_human(Options::get('staticcache__expire', StaticCache::EXPIRE));
 	}
+
+	/*
+	 * Convert seconds to human readable text.
+	 *
+	 */
+	public function secs_to_human($secs)
+	{
+	        $units = array(
+	                "week"   => 7*24*3600,
+	                "day"    =>   24*3600,
+	                "hour"   =>      3600,
+	                "minute" =>        60,
+	                "second" =>         1,
+	        );
 	
+		// specifically handle zero
+	        if ( $secs == 0 ) return "0 seconds";
+	
+	        $s = "";
+	        foreach ( $units as $name => $divisor ) {
+	                if ( $quot = intval($secs / $divisor) ) {
+	                        $s .= "$quot $name";
+	                        $s .= (abs($quot) > 1 ? "s" : "") . ", ";
+	                        $secs -= $quot * $divisor;
+	                }
+	        }
+	        return substr($s, 0, -2);
+	}
+
 	/**
 	 * Ajax entry point for the 'clear cache data' action. Clears all stats and cache data
 	 * and outputs a JSON encoded string message.
